@@ -33,6 +33,7 @@ const server = http.createServer( (req, res ) => {
     }
     */
 
+
     // Build file path
     let filePath = path.join(
         __dirname,
@@ -55,27 +56,99 @@ const server = http.createServer( (req, res ) => {
         case '.jpg': contentType = 'image/jpg'; break;
     }
 
+
     // Read file
-    fs.readFile(filePath, (err, content) => {
-        if(err){
-            if(err.code == 'ENOENT'){
-                //Page not found
-                fs.readFile(path.join(__dirname, 'public', '404.html'),
-                (err, content) => {
-                    res.writeHead(200, {'Content-Type': 'text/html'});
-                    res.end(content, 'utf8');
-                })
+        fs.readFile(filePath, (err, content) => {
+            console.dir(req.params);
+            if(err){
+                if(err.code == 'ENOENT'){
+                    //Page not found
+                    fs.readFile(path.join(__dirname, 'public', '404.html'),
+                    (err, content) => {
+                        res.writeHead(200, {'Content-Type': 'text/html'});
+                        res.end(content, 'utf8');
+                    })
+                }else{
+                    // Some server error
+                    res.writeHead(500);
+                    res.end(`Server Error: ${err.code}`);
+                }
             }else{
-                // Some server error
-                res.writeHead(500);
-                res.end(`Server Error: ${err.code}`);
+                // Succes
+                res.writeHead(200, {'Content-Type': contentType});
+                res.end(content, 'utf8');
             }
-        }else{
-            // Succes
-            res.writeHead(200, {'Content-Type': contentType});
-            res.end(content, 'utf8');
-        }
-    });
+        });
+
+    if (req.method == "GET")
+    {
+
+    }else if(req.method=="POST"){
+
+        let body ='';
+        let bodyObj = [];
+        req.on('data', function(data){
+            body += data;
+            bodyObj = JSON.parse(data);
+            bodyObj.userId = 9;
+            fs.readFile(filePath, function (err, dataFile) {
+                var json = JSON.parse(dataFile);
+                bodyObj.id = json.length + 1;
+                json.push(bodyObj);
+                fs.writeFile(filePath, JSON.stringify(json), err => {
+                    if(err) throw err;
+                });
+            });
+        });
+        req.on('end', function() {
+            res.writeHead(200, {'Content-Type': 'application/json'});
+            res.end(JSON.stringify(bodyObj));
+        });
+    }else if(req.method=="DELETE"){
+        req.on('data', function(data){
+
+            fs.readFile(filePath, function (err, dataFile) {
+                var json = JSON.parse(dataFile);
+                const id = JSON.parse(data);
+                let ogg = Array.from(json);
+
+                fs.writeFile(filePath, JSON.stringify(ogg.filter(el => el.id !== id)), err => {
+                    if(err) throw err;
+
+                });
+            });
+        });
+        req.on('end', function() {
+            console.log("Successfully removed");
+        });
+    }else if(req.method === 'PUT'){
+        req.on('data', function(data){
+
+            fs.readFile(filePath, function (err, dataFile) {
+                /* the data value is a string ? */
+                var json = JSON.parse(dataFile);
+                let id = data;
+                id = String(data).split(":")[1];
+                id = id.substring(0,id.length -1);
+                let ogg = Array.from(json);
+                ogg.forEach( el => {
+                    if(el.id == id){
+                        el.completed = !el.completed;
+                    }
+                })
+
+                fs.writeFile(filePath, JSON.stringify(ogg), err => {
+                    if(err) throw err;
+
+                });
+            });
+        });
+        req.on('end', function() {
+            console.log("Successfully updated");
+        });
+    }
+
+
 });
 
 const PORT = process.env.PORT || 5000;
