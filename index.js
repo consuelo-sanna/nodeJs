@@ -57,28 +57,7 @@ const server = http.createServer( (req, res ) => {
     }
 
 
-    // Read file
-        fs.readFile(filePath, (err, content) => {
-            console.dir(req.params);
-            if(err){
-                if(err.code == 'ENOENT'){
-                    //Page not found
-                    fs.readFile(path.join(__dirname, 'public', '404.html'),
-                    (err, content) => {
-                        res.writeHead(200, {'Content-Type': 'text/html'});
-                        res.end(content, 'utf8');
-                    })
-                }else{
-                    // Some server error
-                    res.writeHead(500);
-                    res.end(`Server Error: ${err.code}`);
-                }
-            }else{
-                // Succes
-                res.writeHead(200, {'Content-Type': contentType});
-                res.end(content, 'utf8');
-            }
-        });
+
 
     if (req.method == "GET")
     {
